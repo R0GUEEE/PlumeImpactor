@@ -68,9 +68,6 @@ jobs:
       - name: Install Rust stable
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Setup Windows dependencies
-        run: choco install strawberryperl make --no-progress
-
       - name: Setup Windows MSVC environment
         uses: ilammy/msvc-dev-cmd@v1
 
@@ -80,11 +77,19 @@ jobs:
           cargo fetch --locked || true
           cargo patch-crate --force
           mkdir -p build/out
+          mkdir -p build/nsis
 
       - name: Build & Bundle (Windows)
         run: |
           cargo build --bin ${{ env.BINARY_NAME }} --release
-          cp target/release/${{ env.BINARY_NAME }}.exe build/out
+          cp target/release/${{ env.BINARY_NAME }}.exe build/nsis
+
+      - name: Create NSIS Installer
+        run: |
+          mv package/windows/* build/nsis/
+          choco install nsis.portable
+          makensis build/nsis/installer.nsi
+          mv build/nsis/PlumeInstaller.exe build/out/${{ env.BINARY_NAME }}-setup.exe
 
       - name: Upload Bundles
         uses: actions/upload-artifact@v4
