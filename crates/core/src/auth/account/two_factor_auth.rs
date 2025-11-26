@@ -112,12 +112,15 @@ impl Account {
             .client
             .post("https://gsa.apple.com/auth/verify/phone/securitycode")
             .headers(headers)
-            .header("accept", "application/json")
             .json(&body)
             .send()
             .await?;
 
-        if res.status() != 200 {
+        let status_code = res.status();
+
+        // TODO: 423 http code may occur, in this case we to ask for sending
+        // last code sent (unlikely it would even work), or try again later
+        if !status_code.is_success() {
             return Err(Error::Bad2faCode);
         }
 
